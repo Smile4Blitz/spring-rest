@@ -6,42 +6,78 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import be.ugent.reeks1.Repository.UserRepository;
+import be.ugent.reeks1.models.BlogPostUser;
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 @EnableWebSecurity
 @Configuration
 public class SecurityConfiguration {
-    @Value("${security.admin.user}")
-    String user;
+    @Value("${spring.security.user.name}")
+    String username;
 
-    @Value("{security.admin.password}")
-    String password;
+    @Autowired
+    private UserRepository userRepository;
 
-    @Value("{security.admin.roles}")
-    String roles;
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            BlogPostUser user = userRepository.findByUsername(username);
+            if (user == null) {
+                throw new UsernameNotFoundException("User not found: " + username);
+            }
+
+            return org.springframework.security.core.userdetails.User
+                    .withUsername(user.getUsername())
+                    .password(user.getPassword())
+                    .roles(user.getRoles())
+                    .build();
+        };
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        httpSecurity
+                .csrf(authorize -> {
+                    authorize
+                            // .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                            .ignoringRequestMatchers("/csrf/**")
+                            .ignoringRequestMatchers("/h2-console/**")
+                            .ignoringRequestMatchers("/error/**");
+                })
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(h -> {
+                    h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
+                })
                 .authorizeHttpRequests(authorize -> {
                     authorize
+                            .requestMatchers(antMatcher("/csrf/**")).permitAll()
+                            .requestMatchers(antMatcher("/error/**")).permitAll()
                             .requestMatchers(antMatcher("/h2-console/**")).permitAll()
+                            .requestMatchers(antMatcher(HttpMethod.GET, "/blogposts/**")).permitAll()
                             .requestMatchers(antMatcher(HttpMethod.POST, "/blogposts/**")).hasRole("ADMIN")
                             .requestMatchers(antMatcher(HttpMethod.PUT, "/blogposts/**")).hasRole("ADMIN")
                             .requestMatchers(antMatcher(HttpMethod.DELETE, "/blogposts/**")).hasRole("ADMIN")
-                            .anyRequest().permitAll();
+                            .anyRequest().authenticated();
                 })
-                .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
-                .httpBasic(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
+                .httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
     }
 }

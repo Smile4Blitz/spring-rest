@@ -1,4 +1,4 @@
-package be.ugent.reeks1.data;
+package be.ugent.reeks1.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

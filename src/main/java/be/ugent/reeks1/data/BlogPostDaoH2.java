@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import be.ugent.reeks1.Repository.BlogPostRepository;
 import be.ugent.reeks1.exception.BlogPostAlreadyExists;
 import be.ugent.reeks1.exception.BlogPostNotFoundException;
 import be.ugent.reeks1.interfaces.IRepository;
