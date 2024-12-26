@@ -3,27 +3,42 @@ package be.ugent.reeks1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import be.ugent.reeks1.exception.BlogPostNotFoundException;
 import be.ugent.reeks1.interfaces.IRepository;
 import be.ugent.reeks1.models.BlogPost;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("dev")
+@Import(TestSecurityConfig.class)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public class BlogPostTests {
     @Autowired
     WebTestClient wc;
 
     @Autowired
     IRepository repository;
+
+    @Value("${spring.security.user.name}")
+    String username;
+
+    @Value("${spring.security.user.password}")
+    String password;
+
+    @Value("${spring.security.user.roles}")
+    String roles;
 
     Integer mockId = 1;
     String mockTitle = "test";
@@ -73,9 +88,13 @@ public class BlogPostTests {
         blogPost.setTitle("test");
         blogPost.setContent("test");
 
+        String basicAuth = username.concat(":").concat(password);
+        String encoded = Base64Coder.encodeString(basicAuth);
+
         wc.post()
                 .uri("/blogposts")
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Basic ".concat(encoded))
                 .bodyValue(blogPost)
                 .exchange()
                 .expectStatus().isCreated()
@@ -90,6 +109,9 @@ public class BlogPostTests {
     @Test
     @DirtiesContext
     void putBlogPost() throws BlogPostNotFoundException {
+        String basicAuth = username.concat(":").concat(password);
+        String encoded = Base64Coder.encodeString(basicAuth);
+
         // before
         BlogPost blogPost = this.repository.getPost(mockId);
 
@@ -99,6 +121,7 @@ public class BlogPostTests {
         wc.put()
                 .uri("/blogposts/" + mockId)
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Basic ".concat(encoded))
                 .bodyValue(blogPost)
                 .exchange()
                 .expectStatus().isNoContent();
@@ -113,8 +136,12 @@ public class BlogPostTests {
     @Test
     @DirtiesContext
     void deleteBlogPost() {
+        String basicAuth = username.concat(":").concat(password);
+        String encoded = Base64Coder.encodeString(basicAuth);
+
         wc.delete()
                 .uri("/blogposts/" + mockId)
+                .header("Authorization", "Basic ".concat(encoded))
                 .exchange()
                 .expectStatus().isNoContent();
 

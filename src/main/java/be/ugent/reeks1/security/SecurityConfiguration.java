@@ -2,10 +2,12 @@ package be.ugent.reeks1.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,8 +24,9 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-@EnableWebSecurity
 @Configuration
+@Profile("prod")
+@EnableWebSecurity
 public class SecurityConfiguration {
     @Value("${spring.security.user.name}")
     String username;
@@ -55,13 +58,7 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
-                .csrf(authorize -> {
-                    authorize
-                            // .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                            .ignoringRequestMatchers("/csrf/**")
-                            .ignoringRequestMatchers("/h2-console/**")
-                            .ignoringRequestMatchers("/error/**");
-                })
+                .csrf(t -> csrfSecurity(t))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(h -> {
                     h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
@@ -80,4 +77,12 @@ public class SecurityConfiguration {
                 .httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
     }
+
+    public CsrfConfigurer<HttpSecurity> csrfSecurity(CsrfConfigurer<HttpSecurity> authorize) {
+        System.out.println("csrf: enabled");
+        return authorize
+                .ignoringRequestMatchers("/csrf/**")
+                .ignoringRequestMatchers("/h2-console/**")
+                .ignoringRequestMatchers("/error/**");
+    };
 }
