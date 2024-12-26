@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,6 +49,7 @@ public class BlogPostController {
         }
     }
 
+    @Secured("ROLE_ADMIN")
     @PostMapping("/blogposts")
     public ResponseEntity<BlogPost> addBlogPost(@RequestBody(required = true) BlogPost blogPost) {
         try {
@@ -63,6 +65,7 @@ public class BlogPostController {
         }
     }
 
+    @Secured("ROLE_ADMIN")
     @PutMapping("/blogposts/{id}")
     public ResponseEntity<Object> putBlogPost(
             @PathVariable("id") Integer id,
@@ -78,6 +81,7 @@ public class BlogPostController {
         }
     }
 
+    @Secured("ROLE_ADMIN")
     @DeleteMapping("/blogposts/{id}")
     public ResponseEntity<Object> deleteBlogPost(@PathVariable(name = "id", required = true) Integer id) {
         try {
