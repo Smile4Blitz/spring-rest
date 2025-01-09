@@ -1,13 +1,13 @@
-package be.ugent.reeks1;
+package be.ugent.arno.rest;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
-public class Reeks1Application {
+@SpringBootApplication()
+public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Reeks1Application.class, args);
+		SpringApplication.run(Application.class, args);
 	}
 
 }
