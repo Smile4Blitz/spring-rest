@@ -39,6 +39,27 @@ public class LazyLoadingExample {
     }
 }
 
+public class EagerLoadingExample {
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("my-persistence-unit");
+        EntityManager em = emf.createEntityManager();
+
+        em.getTransaction().begin();
+        
+        // Laad een Item en controleer of de gerelateerde Order eager wordt geladen
+        Item fetchedItem = em.find(Item.class, 1L); // Voorbeeld: laad item met ID 1
+        System.out.println("Item geladen: " + fetchedItem.getProductName());
+
+        // Toegang tot de Order (eager loading betekent dat dit al geladen is)
+        Order relatedOrder = fetchedItem.getOrder();
+        System.out.println("Gerelateerde order: " + relatedOrder.getCustomerName());
+
+        em.getTransaction().commit();
+        em.close();
+        emf.close();
+    }
+}
+
 @Entity
 public class Order {
     @Id
